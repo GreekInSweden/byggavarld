@@ -94,9 +94,26 @@ export default function WorldScene() {
       return box;
     }
 
-    function placeNewBlock(cat, x, z) {
+    const textureLoader = new THREE.TextureLoader();
+
+    function addImageBillboard(x, z, size, imageUrl) {
+      textureLoader.load(imageUrl, (texture) => {
+        const material = new THREE.SpriteMaterial({ map: texture });
+        const sprite = new THREE.Sprite(material);
+        const aspect = texture.image.width / texture.image.height;
+        const spriteHeight = size * 0.9;
+        sprite.scale.set(spriteHeight * aspect, spriteHeight, 1);
+        sprite.position.set(x, size + spriteHeight / 2 + 0.15, z);
+        scene.add(sprite);
+      });
+    }
+
+    function placeNewBlock(cat, x, z, imageUrl) {
       const size = cat === 'byggnad' ? 1.8 : cat === 'varelse' ? 1.4 : 1.1;
       addBlock(x, z, size, CAT_COLORS[cat] || 0x888780);
+      if (imageUrl) {
+        addImageBillboard(x, z, size, imageUrl);
+      }
     }
     placeNewBlockRef.current = placeNewBlock;
 
@@ -168,7 +185,7 @@ export default function WorldScene() {
 
       setBuilds(data || []);
       (data || []).forEach((b) => {
-        placeNewBlockRef.current?.(b.category, b.pos_x, b.pos_z);
+        placeNewBlockRef.current?.(b.category, b.pos_x, b.pos_z, b.image_url);
       });
     }
     load();
@@ -222,7 +239,7 @@ export default function WorldScene() {
       return;
     }
 
-    placeNewBlockRef.current?.(category, posX, posZ);
+    placeNewBlockRef.current?.(category, posX, posZ, imageUrl);
     setBuilds((prev) => [...prev, data]);
     setStatus(buildName + ' är nu placerad i din värld. Gå och hitta den.');
     setName('');
@@ -323,6 +340,13 @@ export default function WorldScene() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
           {builds.map((b) => (
             <div key={b.id} style={{ background: 'white', border: '1px solid #d3d1c7', borderRadius: 12, padding: 12 }}>
+              {b.image_url && (
+                <img
+                  src={b.image_url}
+                  alt=""
+                  style={{ width: '100%', height: 90, objectFit: 'cover', borderRadius: 8, marginBottom: 8 }}
+                />
+              )}
               <p style={{ fontWeight: 500, fontSize: 14, margin: 0 }}>{b.name}</p>
               <p style={{ fontSize: 12, color: '#5f5e5a', margin: '4px 0 0' }}>{CAT_LABELS[b.category]}</p>
             </div>
