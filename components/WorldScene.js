@@ -96,17 +96,30 @@ export default function WorldScene() {
 
     const textureLoader = new THREE.TextureLoader();
 
-    function addImageBillboard(x, z, size, imageUrl) {
+    function addPhotoCutout(x, z, size, imageUrl) {
       textureLoader.load(
         imageUrl,
         (texture) => {
-          const material = new THREE.SpriteMaterial({ map: texture });
-          const sprite = new THREE.Sprite(material);
           const aspect = texture.image.width / texture.image.height;
-          const spriteHeight = size * 0.9;
-          sprite.scale.set(spriteHeight * aspect, spriteHeight, 1);
-          sprite.position.set(x, size + spriteHeight / 2 + 0.15, z);
-          scene.add(sprite);
+          const cutoutHeight = size * 1.6;
+          const cutoutWidth = cutoutHeight * aspect;
+
+          const material = new THREE.MeshBasicMaterial({
+            map: texture,
+            side: THREE.DoubleSide,
+            transparent: true
+          });
+          const plane = new THREE.Mesh(new THREE.PlaneGeometry(cutoutWidth, cutoutHeight), material);
+          plane.position.set(x, cutoutHeight / 2, z);
+          scene.add(plane);
+
+          const baseColor = CAT_COLORS[currentCatByPosition(x, z)] || 0x888780;
+          const base = new THREE.Mesh(
+            new THREE.CylinderGeometry(cutoutWidth * 0.4, cutoutWidth * 0.4, 0.06, 16),
+            new THREE.MeshStandardMaterial({ color: baseColor })
+          );
+          base.position.set(x, 0.03, z);
+          scene.add(base);
         },
         undefined,
         (err) => {
@@ -115,11 +128,18 @@ export default function WorldScene() {
       );
     }
 
+    const catByPosition = {};
+    function currentCatByPosition(x, z) {
+      return catByPosition[`${x},${z}`];
+    }
+
     function placeNewBlock(cat, x, z, imageUrl) {
       const size = cat === 'byggnad' ? 1.8 : cat === 'varelse' ? 1.4 : 1.1;
-      addBlock(x, z, size, CAT_COLORS[cat] || 0x888780);
+      catByPosition[`${x},${z}`] = cat;
       if (imageUrl) {
-        addImageBillboard(x, z, size, imageUrl);
+        addPhotoCutout(x, z, size, imageUrl);
+      } else {
+        addBlock(x, z, size, CAT_COLORS[cat] || 0x888780);
       }
     }
     placeNewBlockRef.current = placeNewBlock;
