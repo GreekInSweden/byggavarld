@@ -97,15 +97,22 @@ export default function WorldScene() {
     const textureLoader = new THREE.TextureLoader();
 
     function addImageBillboard(x, z, size, imageUrl) {
-      textureLoader.load(imageUrl, (texture) => {
-        const material = new THREE.SpriteMaterial({ map: texture });
-        const sprite = new THREE.Sprite(material);
-        const aspect = texture.image.width / texture.image.height;
-        const spriteHeight = size * 0.9;
-        sprite.scale.set(spriteHeight * aspect, spriteHeight, 1);
-        sprite.position.set(x, size + spriteHeight / 2 + 0.15, z);
-        scene.add(sprite);
-      });
+      textureLoader.load(
+        imageUrl,
+        (texture) => {
+          const material = new THREE.SpriteMaterial({ map: texture });
+          const sprite = new THREE.Sprite(material);
+          const aspect = texture.image.width / texture.image.height;
+          const spriteHeight = size * 0.9;
+          sprite.scale.set(spriteHeight * aspect, spriteHeight, 1);
+          sprite.position.set(x, size + spriteHeight / 2 + 0.15, z);
+          scene.add(sprite);
+        },
+        undefined,
+        (err) => {
+          console.error('Kunde inte ladda bild för bygge:', imageUrl, err);
+        }
+      );
     }
 
     function placeNewBlock(cat, x, z, imageUrl) {
@@ -160,6 +167,10 @@ export default function WorldScene() {
     animate();
 
     sceneRef.current = { avatar, thirdPerson: false };
+    sceneRef.current.teleport = (x, z) => {
+      avatar.position.x = x;
+      avatar.position.z = z;
+    };
 
     return () => {
       cancelAnimationFrame(raf);
@@ -339,7 +350,17 @@ export default function WorldScene() {
         <p style={{ fontSize: 13, color: '#5f5e5a', margin: '0 0 8px' }}>Dina byggen ({builds.length})</p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
           {builds.map((b) => (
-            <div key={b.id} style={{ background: 'white', border: '1px solid #d3d1c7', borderRadius: 12, padding: 12 }}>
+            <div
+              key={b.id}
+              onClick={() => sceneRef.current?.teleport?.(b.pos_x, b.pos_z)}
+              style={{
+                background: 'white',
+                border: '1px solid #d3d1c7',
+                borderRadius: 12,
+                padding: 12,
+                cursor: 'pointer'
+              }}
+            >
               {b.image_url && (
                 <img
                   src={b.image_url}
@@ -349,6 +370,7 @@ export default function WorldScene() {
               )}
               <p style={{ fontWeight: 500, fontSize: 14, margin: 0 }}>{b.name}</p>
               <p style={{ fontSize: 12, color: '#5f5e5a', margin: '4px 0 0' }}>{CAT_LABELS[b.category]}</p>
+              <p style={{ fontSize: 11, color: '#888780', margin: '6px 0 0' }}>Klicka för att gå dit</p>
             </div>
           ))}
         </div>
