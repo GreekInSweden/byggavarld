@@ -215,12 +215,13 @@ export default function WorldScene() {
     setStatus('');
 
     let imageUrl = null;
+    let uploadFailedMessage = null;
 
     if (file) {
       const path = `${WORLD_ID}/${Date.now()}-${file.name}`;
       const { error: uploadError } = await supabase.storage.from('builds').upload(path, file);
       if (uploadError) {
-        setStatus('Kunde inte ladda upp bilden: ' + uploadError.message);
+        uploadFailedMessage = 'Bilden kunde inte laddas upp (bygget sparades ändå utan bild): ' + uploadError.message;
       } else {
         const { data: publicUrlData } = supabase.storage.from('builds').getPublicUrl(path);
         imageUrl = publicUrlData.publicUrl;
@@ -252,7 +253,7 @@ export default function WorldScene() {
 
     placeNewBlockRef.current?.(category, posX, posZ, imageUrl);
     setBuilds((prev) => [...prev, data]);
-    setStatus(buildName + ' är nu placerad i din värld. Gå och hitta den.');
+    setStatus(uploadFailedMessage || buildName + ' är nu placerad i din värld. Gå och hitta den.');
     setName('');
     setFile(null);
     setPreviewUrl(null);
